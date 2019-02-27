@@ -37,7 +37,7 @@ export namespace ResData {
     export interface User {
         type:'user';
         id:number;
-        attributes:Database.User;
+        attributes:Database.User_Default;
     }
 
     export function allocUser () : User {
@@ -54,7 +54,7 @@ export namespace ResData {
         type:'channel';
         id:number;
         attributes:Database.Channel;
-    } 
+    }
 
     export interface Thread {
         type:'thread';
@@ -64,6 +64,7 @@ export namespace ResData {
         channel?:Channel;
         tags?:Tag[];
         recommendations?:Recommendation[];
+        last_component?:Post;
     }
 
     export function allocThread () : Thread {
@@ -98,10 +99,21 @@ export namespace ResData {
         total_pages:number;
     }
 
+    export function allocThreadPaginate () : ThreadPaginate {
+        return {
+            total: 1,
+            count: 1,
+            per_page: 1,
+            current_page: 1,
+            total_pages: 1,
+        };
+    }
+
     export interface Post {
         type:'post';
         id:number;
         attributes:Database.Post;
+        component:Chapter;
         author:User;
     }
 
@@ -112,6 +124,7 @@ export namespace ResData {
             attributes: {
                 body: '',
             },
+            component: allocChapter(),
             author: allocUser(),
         };
     }
@@ -131,7 +144,17 @@ export namespace ResData {
     export interface Chapter {
         type:'chapter';
         id:number;
-        attributes:Database.Chapter & Database.Post;
+        attributes:Database.Chapter;
+    }
+
+    export function allocChapter () : Chapter {
+        return {
+            type: 'chapter',
+            id: 0,
+            attributes: {
+
+            },
+        };
     }
 
     export interface Volumn {
@@ -139,13 +162,33 @@ export namespace ResData {
         id:number;
         attributes:Database.Volume;
     }
+
+    export interface Date {
+        date:Timestamp;
+        timezone_type:number;
+        timezone:string;
+    }
 }
 
 export namespace Request {
     export namespace Thread {
-        export type withBook = 'book_only'|'none_book_only';
+        // （是否仅返回边缘/非边缘内容）
         export type withBianyuan = 'bianyuan_only'|'none_bianyuan_only';
-        export type ordered = 'last_added_chapter_at'|'jifen'|'weighted_jifen'|'created_at'|'id'|'collections'|'total_char';
+
+        export type ordered = 'latist_added_component'| //按最新更新时间排序
+                              'jifen'|                   //按总积分排序
+                              'weighted_jifen'|          //按平衡积分排序
+                              'latest_created'|              //按创建时间排序
+                              'id'|                      //按id排序
+                              'collection_count'|             //按收藏总数排序
+                              'total_char';              //按总字数排序
+
+        export type withType = 'thread'|                 //仅返回讨论帖
+                               'book'|                   //仅返回书籍
+                               'list'|        //仅返回收藏单
+                               'column'|
+                               'request'|
+                               'homework';
     }
 }
 
@@ -179,40 +222,52 @@ export interface APIGet {
     }>;
     '/thread':APISchema<{
         req:{
-            channel:number[],
-            withBook:Request.Thread.withBook,
-            withTag:number[],
-            excludeTag:number[],
-            withBianyuan:Request.Thread.withBianyuan,
-            ordered:Request.Thread.ordered,
+            channel?:number[],
+            tags?:number[],
+            excludeTag?:number[],
+            withBianyuan?:Request.Thread.withBianyuan,
+            ordered?:Request.Thread.ordered,
+            withType?:Request.Thread.withType,
+            page?:number;
         };
         res:{
             threads:ResData.Thread[],
             paginate:ResData.ThreadPaginate,
         };
     }>;
+    '/homethread':APISchema<{
+        req:undefined;
+        res:{};
+    }>;
     '/thread/:id':APISchema<{
         req:{
             id:number;
+            page?:number;
         };
         res:{
             thread:ResData.Thread,
             posts:ResData.Post[],
-            paginate:ResData.ThreadPaginate, 
+            paginate:ResData.ThreadPaginate,
         }
+    }>;
+    '/homebook':APISchema<{
+        req:undefined;
+        res:{};
     }>;
     '/book/:id':APISchema<{
         req:{
             id:number;
+            page?:number;
         };
         res:{
             thread:ResData.Thread;
-            chapters:ResData.Chapter[];
+            chapters:ResData.Post[];
             volumns:ResData.Volumn[];
+            paginate:ResData.ThreadPaginate,
             most_upvoted:ResData.Post;
-            newest_comment:ResData.Post;
+            top_review:ResData.Post|null;
         }
-    }>
+    }>;
 }
 export interface APIPost {
     '/register':APISchema<{
@@ -237,19 +292,66 @@ export interface APIPost {
     }>;
     '/thread':APISchema<{
         req:{
-            channel:number;
             title:string;
             brief:string;
-            body:string; 
+            body:string;
+            no_reply?:boolean;
+            use_markdown?:boolean;
+            use_indentation?:boolean;
+            is_bianyuan?:boolean;
+            is_not_public?:boolean;
         };
         res:{
             thread:ResData.Thread;
         }
     }>;
+    '/thread/:id/synctags':APISchema<{
+        req:{
+            id:number;
+            tags:number[];
+        };
+        res:{};
+    }>;
+    '/thread/:id/post':APISchema<{
+        req:{
+            id:number;
+            body:string;
+            brief:string;
+            is_anonymous?:boolean;
+            majia?:string;
+            reply_id?:number;
+            use_markdown?:boolean;
+            use_indentation?:boolean;
+            is_bianyuan?:boolean;
+        };
+        res:{
+            body:string;
+            brief:string;
+            thread_id:number;
+            is_anonymous:boolean;
+            use_markdown:boolean;
+            use_indentation:boolean;
+            is_bianyuan:boolean;
+            last_responed_at:ResData.Date;
+            user_id:number;
+            type:'post';
+            created_at:Timestamp;
+            id:number;
+        };
+    }>;
+    '/thread/:id/chapter':APISchema<{
+        req:{
+            id:number;
+            title:string;
+            brief:string;
+            body:string;
+            annotation?:string;
+            annotation_infront?:boolean;
+        };
+        res:ResData.Chapter[];
+    }>;
     '/recommendation':APISchema<{
         req:{
-            thread:number;
-            brief:string;
             type:'short'|'long'|'topic';
             body?:string;
             users:number[];
@@ -261,11 +363,50 @@ export interface APIPost {
 export interface APIPatch {
     '/recommendation':APISchema<{
         req:{
-            brief?:string;
-            body?:string;
             is_public?:boolean;
             is_past?:boolean;
         };
         res:string; //fixme:
+    }>;
+    '/thread/:id':APISchema<{
+        req:{
+            id:number;
+            title?:string;
+            brief?:string;
+            body?:string;
+            no_reply?:boolean;
+            use_markdown?:boolean;
+            use_indentation?:boolean;
+            is_bianyuan?:boolean;
+            is_not_public?:boolean;
+        };
+        res:{}; //fixme:
+    }>;
+    '/thread/:tid/post/:pid':APISchema<{
+        req:{
+            tid:number;
+            pid:number;
+            body?:string;
+            brief?:string;
+            is_anonymous?:boolean;
+            use_markdown?:boolean;
+            use_indentation?:boolean;
+        };
+        res:{}; //fixme:
+    }>;
+}
+
+export interface APIPut {
+    '/thread/:tid/chapter/:cid':APISchema<{
+        req:{
+            tid:number;
+            cid:number;
+            title?:string;
+            brief?:string;
+            body?:string;
+            annotation?:string;
+            annotation_infront?:boolean;
+        };
+        res:{}; //fixme:
     }>;
 }
