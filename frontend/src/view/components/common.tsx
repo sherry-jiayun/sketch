@@ -2,7 +2,8 @@ import * as React from 'react';
 import { parseDate } from '../../utils/date';
 import { Link } from 'react-router-dom';
 import { ResData } from '../../config/api';
-import { addQuery } from '../../utils/url';
+import { URLParser } from '../../utils/url';
+import './styles/common.scss';
 
 export const COLOR_GREY = '#555';
 
@@ -114,22 +115,6 @@ export class Pagination extends React.Component <{
     public FirstShowPages = 3;
     public MiddleShowPages = 10;
     public LastShowPages = 3;
-    public prevEl:HTMLAnchorElement|null = null;
-    public nextEl:HTMLAnchorElement|null = null;
-
-    public componentDidUpdate () {
-        if (!this.prevEl || !this.nextEl) { return; }
-        if (this.props.currentPage === 1) {
-            this.prevEl.setAttribute('disabled', '');
-        } else {
-            this.prevEl.removeAttribute('disabled');
-        }
-        if (this.props.currentPage === this.props.lastPage) {
-            this.nextEl.setAttribute('disabled', '');
-        } else {
-            this.nextEl.removeAttribute('disabled');
-        }
-    }
 
     public render () {
         const pages = new Array(this.props.lastPage);
@@ -138,12 +123,12 @@ export class Pagination extends React.Component <{
         return <div className={this.props.className}
             style={Object.assign({}, this.props.style || {})}>
             <nav className="pagination is-centered is-small" role="navigation" aria-label="pagination">
-                <a className="pagination-previous"
-                    ref={(el) => this.prevEl = el}
-                    href={addQuery(window.location.href, 'page', this.props.currentPage - 1)}>❮</a>
-                <a className="pagination-next"
-                    ref={(el) => this.nextEl = el}
-                    href={addQuery(window.location.href, 'page', this.props.currentPage + 1)}>❯</a>
+                <Anchor className="pagination-previous"
+                    to={(new URLParser()).setQuery('page', this.props.currentPage - 1).getPathname()}
+                    isDisabled={this.props.currentPage === 1}>&lt;</Anchor>
+                <Anchor className="pagination-next"
+                    to={(new URLParser()).setQuery('page', this.props.currentPage + 1).getPathname()}
+                    isDisabled={this.props.currentPage === this.props.lastPage}>&gt;</Anchor>
                 <ul className="pagination-list">
                 { pages.map((_, idx) => {
                     const page = idx + 1;
@@ -152,7 +137,9 @@ export class Pagination extends React.Component <{
                         page < this.props.currentPage + this.MiddleShowPages / 2 ||
                         page > this.props.currentPage - this.MiddleShowPages / 2 ) {
                         return <li key={page}>
-                            <a className={`pagination-link ${page === this.props.currentPage && 'is-current'}`} href={addQuery(window.location.href, 'page', page)}>{page}</a>
+                            <Link
+                                className={`pagination-link ${page === this.props.currentPage && 'is-current'}`}
+                                to={(new URLParser()).setQuery('page', page).getPathname()}>{page}</Link>
                         </li>;
                     }
                     if ((page === this.FirstShowPages + 1 && this.props.currentPage - this.MiddleShowPages / 2 > this.FirstShowPages + 1) ||
@@ -166,5 +153,66 @@ export class Pagination extends React.Component <{
                 </ul>
             </nav>
         </div>;
+    }
+}
+
+export class Anchor extends React.Component <{
+    className?:string;
+    isDisabled?:boolean;
+    to:string;
+    children?:React.ReactNode;
+    role?:string;
+}, {}> {
+    public el:HTMLAnchorElement|null = null;
+    public componentDidUpdate () {
+        if (!this.el) { return; }
+        if (this.props.isDisabled) {
+            this.el.setAttribute('disabled', '');
+        } else {
+            this.el.removeAttribute('disabled');
+        }
+    }
+    public render () {
+        return <Link
+            className={this.props.className}
+            to={this.props.to}
+            role={this.props.role}
+            innerRef={(el) => this.el = el}>{this.props.children}</Link>;
+    }
+}
+
+export class TabCard extends React.Component<{
+    tabs:{name:string, children:React.ReactNode}[];
+    className?:string;
+    more?:string;
+}, {
+    onTab:number;
+}> {
+    public state = {
+        onTab: 0,
+    }
+
+    public render () {
+        const className = this.props.className || '';
+        return <Card className={`tab-card ${className}`}>
+            <div className="tabs is-boxed">
+                <ul>
+                    {this.props.tabs.map((tab, i) =>
+                        <li key={i}
+                            onClick={() => this.setState({onTab: i})}
+                            className={this.state.onTab === i ? 'is-active' : ''}>
+                            <a><span>{tab.name}</span></a>
+                        </li>)}
+                </ul>
+            </div>
+            <div className="tab-content">
+                {this.props.tabs[this.state.onTab].children}
+            </div>
+            { this.props.more &&
+                <Link className="more" to={this.props.more}>
+                    更多
+                </Link>
+            }
+        </Card>;
     }
 }

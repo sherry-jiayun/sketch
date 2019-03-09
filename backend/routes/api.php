@@ -23,14 +23,14 @@ Route::post('register', 'API\PassportController@register');
 Route::post('login', 'API\PassportController@login')->name('login');
 
 //默认页面
-Route::get('/', 'API\PagesController@home')->name('home');//网站首页
-Route::get('/homebook', 'API\PagesController@homebook')->name('homebook');//文库页面首页
-Route::get('/homethread', 'API\PagesController@homethread')->name('homethread');//论坛页面首页
+Route::get('/', 'API\PageController@home')->name('home');//网站首页
+Route::get('/homebook', 'API\PageController@homebook')->name('homebook');//文库页面首页
+Route::get('/homethread', 'API\PageController@homethread')->name('homethread');//论坛页面首页
 
 //固定信息
-Route::get('config/allTags', 'API\PagesController@allTags');
-Route::get('config/noTongrenTags', 'API\PagesController@noTongrenTags');
-Route::get('config/allChannels', 'API\PagesController@allChannels');
+Route::get('config/allTags', 'API\PageController@allTags');
+Route::get('config/noTongrenTags', 'API\PageController@noTongrenTags');
+Route::get('config/allChannels', 'API\PageController@allChannels');
 
 //讨论串/讨论楼/讨论帖
 Route::apiResource('thread', 'API\ThreadController');
@@ -73,6 +73,11 @@ Route::apiResource('status', 'API\StatusController');
 Route::post('quote', 'API\QuoteController@store');
 
 //私信部分
-Route::post('/message/store/{user}', 'API\MessageController@store');//有点问题
+Route::get('/user/{user}/message', 'API\MessageController@index');//展示某用户的信箱，仅允许本人和管理员查询
+Route::post('message', 'API\MessageController@store');
 
 //阅读历史保存
+
+//投票
+
+Route::apiResource('vote', 'API\VoteController')->only(['index', 'store', 'update']);

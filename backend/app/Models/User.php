@@ -33,6 +33,11 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    const UPDATED_AT = null;
 
     public function threads()
     {
@@ -54,17 +59,32 @@ class User extends Authenticatable
         return ConstantObjects::role_users()->where('user_id', $this->id);
     }
 
+    public function mainTitle()
+    {
+        return $this->belongsTo(Title::class, 'title_id');
+    }
+
     public function titles()
     {
         return $this->belongsToMany('App\Models\Title', 'title_user', 'user_id', 'title_id')->withPivot('is_public');
     }
 
-    public function public_titles()
+    public function publicTitles()
     {
         return $this->belongsToMany('App\Models\Title', 'title_user', 'user_id', 'title_id')->wherePivot('is_public', true)->withPivot('is_public');
     }
 
-    public function collected_items()
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class, 'user_id');
+    }
+
+    public function info()
+    {
+        return $this->hasOne(UserInfo::class, 'user_id');
+    }
+
+    public function collectedItems()
     {
         return $this->belongsToMany('App\Models\Thread', 'collection_count', 'user_id', 'thread_id');
     }
@@ -129,4 +149,8 @@ class User extends Authenticatable
         return $this->roles()->where('role', $roleSlug)->count() == 1;
     }
 
+    public function isAdmin()
+    {
+        return $this->inRole('admin');
+    }
 }

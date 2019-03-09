@@ -7,6 +7,7 @@ return [
     'threads_per_page' => 2,//一页显示多少书/讨论帖
     'chapters_per_page' => 2, //一页显示多少章节
     'posts_per_page' => 2,//一页显示多少回帖
+    'messages_per_page' => 3,//一页显示多少消息
     'quotes_on_homepage' => 2,//首页一次申请调度多少个题头
     'books_on_homepage' => 2,//首页显示多少本最新图书
     'threads_on_homepage' => 2,//首页显示多少本最新讨论帖
@@ -17,6 +18,7 @@ return [
     'brief_len' => 15,//在预览处显示多少个字符
     'long_review' => 30,//达到这个字数的，可以算长推文
     'threads_per_channel' => 2,//论坛首页，每个channel展示多少个帖子
+    'cache_time' => 0,//在测试环境，cache缓存时间设到最短
 
     // 'vote_info' => [
     //     'attitude_types' => [

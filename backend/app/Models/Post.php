@@ -9,6 +9,7 @@ use App\Sosadfun\Traits\ColumnTrait;
 class Post extends Model
 {
     use SoftDeletes, ColumnTrait;
+    use Traits\VoteTrait;
 
     protected $guarded = [];
     protected $post_types = array('chapter', 'question', 'answer', 'request', 'post', 'comment', 'review'); // post的分类类别
@@ -44,14 +45,9 @@ class Post extends Model
         return $this->belongsTo(Post::class, 'reply_id')->select($this->postbrief_columns);
     }
 
-    public function votes()
-    {
-        return $this->morphMany('App\Models\Vote', 'votable');
-    }
-
     public function author()
     {
-        return $this->belongsTo(User::class, 'user_id')->select('id','name');
+        return $this->belongsTo(User::class, 'user_id')->select('id','name','title_id');
     }
 
     public function chapter()

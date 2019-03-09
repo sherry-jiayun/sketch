@@ -1,23 +1,16 @@
 import * as React from 'react';
-import { Core } from '../../../core/index';
-import { Page } from '../../components/common';
+import { Page, Anchor } from '../../components/common';
 import { BookProfile } from '../../components/book/book-profile';
 import { BookChapters } from '../../components/book/book-chapters';
 import { APIGet, ResData } from '../../../config/api';
-import { RouteComponentProps } from 'react-router';
 import { Topnav } from '../../components/topnav';
-
-interface Props extends RouteComponentProps<{
-    id:string;
-}> {
-    core:Core;
-}
+import { MobileRouteProps } from '../router';
 
 interface State {
     data:APIGet['/book/:id']['res']['data'];
 }
 
-export class Book extends React.Component<Props, State> {
+export class Book extends React.Component<MobileRouteProps, State> {
     public state:State = {
         data: {
             thread: ResData.allocThread(),
@@ -30,7 +23,6 @@ export class Book extends React.Component<Props, State> {
     };
 
     public async componentDidMount () {
-        console.log(this.props);
         const res = await this.props.core.db.get('/book/:id', {
             id: +this.props.match.params.id,
         });
@@ -39,10 +31,21 @@ export class Book extends React.Component<Props, State> {
     }
 
     public render () {
-        return (<Page>
-            <Topnav core={this.props.core} title="书籍首页" />
-            <BookProfile thread={this.state.data.thread} />
-            <BookChapters bookId={+this.props.match.params.id} chapters={this.state.data.chapters} />
-        </Page>);
+        return (
+            <Page nav={
+                <Topnav core={this.props.core} 
+                center={
+                    <div className="buttons">
+                        <Anchor className="button" isDisabled={true} to={''}>目录模式</Anchor>
+                        <Anchor className="button" to={'' /* fixme: */}>论坛模式</Anchor>
+                    </div>
+                }
+                right={<a className="button">+</a> /* fixme: */}
+                />
+            }>
+                <BookProfile thread={this.state.data.thread} />
+                <BookChapters bookId={+this.props.match.params.id} chapters={this.state.data.chapters} />
+            </Page>
+        );
     }
 }
