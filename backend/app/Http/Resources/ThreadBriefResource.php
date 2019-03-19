@@ -15,7 +15,7 @@ class ThreadBriefResource extends JsonResource
     public function toArray($request)
     {
         if (!$this->is_anonymous){
-            $author = new AuthorIdentifierResource($this->whenLoaded('author'));
+            $author = new UserBriefResource($this->whenLoaded('author'));
         }else{
             $author = [];
         }
@@ -23,6 +23,7 @@ class ThreadBriefResource extends JsonResource
             'type' => 'thread',
             'id' => (int)$this->id,
             'attributes' => [
+                'channel_id' => (int)$this->channel_id,
                 'title' => (string)$this->title,
                 'brief' => (string)$this->brief,
                 'is_anonymous' => (bool)$this->is_anonymous,

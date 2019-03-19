@@ -54,6 +54,43 @@ $ valet park
 
 以下默认使用`http://127.0.0.1:8000/`作为访问路径。
 
+
+### 2.6 在成功初次使用之后，需要重新pull代码，更新数据库
+#### 2.6.1 使用场景
+有的时候我们会面对这样的情况：
+1. 有一段时间没工作了想重新开始
+2. 刚完成了一部分工作，想在提交前确保和远端兼容
+3. 想要进行下一个任务，
+4. 其他人刚往远端push了新的代码，本地希望和远程保持同步  
+
+这些时候我们需要重新加载来自远程主branch（`backend-reconstruct`）的更新，并且将数据库对应的变化同步更新。
+
+#### 2.6.2 注意事项
+- 请确保自己在backend文件夹内！否则会遇到artisan command不存在这一类的报错
+- 如果还没配置好env，没有运行过后端，请先按照后端readme安装教程的介绍，将各部分先配置好，不能找搬本教程
+
+#### 2.6.3 方法
+依次运行以下指令即可 ：
+
+```
+$ git pull
+$ composer update
+$ php artisan migrate:reset
+$ php artisan passport:install
+$ php artisan db:seed
+$ vendor/bin/phpunit
+```
+以上步骤的意义依次为：  
+1. 从github下载最新更新
+2. 用composer加载最新的安装包（重要！有的时候旧包会有一些bug）
+3. 将现有数据库所有migration清空
+4. 重新安装passport clients（因为数据库清空了，因此需要重新建立sample clients）
+5. 将现有数据库用mock数据填充
+6. 运行phpunit的测试组件，确定一切正常。
+
+#### 2.6.4 结果
+正常的话应该会看到绿色的测试通过公示。一切ok的话，说明这边没有大问题了
+
 ## 3. 数据库结构解释
 
 
@@ -101,12 +138,12 @@ review：书评。在post的基础上，增加记录rating（评分），recomme
         'type' => 'post'
         'attributes' => [
             'user_id' => user_id
-            'post_type' => 'chapter',//'chapter'/'review'/...
+            'post_type' => 'chapter',// 'chapter'/'review'/...
             ...
         ]
-        'component' => [
+        'chapter' => [
             'id' => post_id,
-            'type' => 'chapter',//'chapter'/'review'/...
+            'type' => 'chapter',// 'chapter'/'review'/...
             'attributes' => [
                 'volumn_id' => volumn_id,
                 ...
@@ -554,22 +591,30 @@ reviewRedirects(json) => [
 ```
 #### 4.5.8 quote相关
 ###### 4.5.8.1 创建quote
-http://127.0.0.1:8000/api/quote
-方法：POST
-授权：必须登陆
-必填项：
-body(string)题头内容
-选填项：
-is_anonymous(bool)是否匿名
-majia(string):马甲，仅当存在“is_anonymous”的时候才保存马甲内容
+http://127.0.0.1:8000/api/quote  
+方法：POST  
+授权：必须登陆  
+必填项：  
+body(string) 题头内容  
+选填项：  
+is_anonymous(bool) 是否匿名  
+majia(string): 马甲，仅当存在“is_anonymous”的时候才保存马甲内容
 
 #### 4.5.9 message相关
 ###### 4.5.9.1 创建message
-http://127.0.0.1:8000/api/messages
-方法：POST
-授权：必须登陆，且登陆用户的message_limit>0，接收用户的no_stranger_message=0
-必填项：
-sendTo(int) 接收用户id
+http://127.0.0.1:8000/api/message  
+方法：POST  
+授权：必须登陆，且登陆用户的message_limit>0，接收用户的no_stranger_message=0  
+必填项：  
+sendTo(int) 接收用户id  
+body(string) 消息内容
+
+###### 4.5.9.2 管理员群发私信
+http://127.0.0.1:8000/api/messages  
+方法: POST  
+授权：必须登陆，且登录用户为管理员  
+必填项：  
+sendTos(array) 所有接收用户id  
 body(string) 消息内容
 
 #### 4.5.10 vote相关
@@ -578,7 +623,7 @@ http://127.0.0.1:8000/api/vote
 方法：POST
 授权：必须登陆
 必填项：
-votable_type(string):'Post'|'Quote'|'Status' 被投票对象
+votable_type(string):'Post'|'Quote'|'Status'|'Thread' 被投票对象
 votable_id(int) 被投票对象id
 attitude(string):'upvote'|'downvote'|'funnyvote'|'foldvote' 投票类型
 
@@ -589,6 +634,37 @@ http://127.0.0.1:8000/api/vote
 必填项：
 votable_type(string):'Post'|'Quote'|'Status' 被投票对象
 votable_id(int) 被投票对象id
+
+#### 4.5.11 follower相关
+##### 4.5.11.1 展示用户的所有粉丝
+http://127.0.0.1:8000/api/user/{user}/follower/
+方法：GET
+授权：不需要使用token登陆  
+
+##### 4.5.11.2 展示用户的所有关注
+http://127.0.0.1:8000/api/user/{user}/following/
+方法：GET
+授权：不需要使用token登陆  
+
+##### 4.5.11.3 关注某个用户
+http://127.0.0.1:8000/api/user/follow/{user}
+方法：POST
+授权：必须登录，只能为本人账户操作
+
+##### 4.5.11.4 取关某个用户
+http://127.0.0.1:8000/api/user/follow/{user}
+方法： DELETE
+授权：必须登录，只能为本人账户操作
+
+##### 4.5.11.5 切换是否跟踪某账户的动态
+http://127.0.0.1:8000/api/user/keepNotified/{user}
+方法：PATCH
+授权：必须登录，只能为本人账户操作
+
+##### 4.5.11.5 获取与某段关注关系相关的信息（是否跟踪动态，是否已阅更新）
+http://127.0.0.1:8000/api/user/follow/{user}
+方法：GET
+授权：必须登录，只能为本人账户操作
 
 ## 5. 如何测试
 #### 5.1 写一个新的专项测试文件

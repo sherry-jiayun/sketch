@@ -89,7 +89,7 @@ export namespace Database {
     export interface Thread {
         id?:Increments;
         user_id?:Increments;
-        channel_id?:Increments;
+        channel_id:Increments;
         title:string;
         brief?:string;
         body?:string;
@@ -176,7 +176,7 @@ export namespace Database {
         not_sad?:boolean;
         is_approved?:boolean;
         reviewer_id?:Increments;
-        xianyus?:number;
+        xianyu?:number;
         created_at?:Timestamp;
     }
 

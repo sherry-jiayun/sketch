@@ -20,7 +20,7 @@ class ThreadProfileResource extends JsonResource
             $body = '';
         }
         if ((!$this->is_anonymous)||((auth('api')->check())&&(auth('api')->id()===$this->user_id))){
-            $author = new AuthorIdentifierResource($this->whenLoaded('author'));
+            $author = new UserBriefResource($this->whenLoaded('author'));
         }else{
             $author = [];
         }
@@ -28,6 +28,7 @@ class ThreadProfileResource extends JsonResource
             'type' => 'thread',
             'id' => (int)$this->id,
             'attributes' => [
+                'channel_id' => (int)$this->channel_id,
                 'title' => (string)$this->title,
                 'brief' => (string)$this->brief,
                 'body' => (string)$body,

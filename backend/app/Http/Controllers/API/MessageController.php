@@ -19,9 +19,21 @@ class MessageController extends Controller
 
     public function store(StoreMessage $form)
     {
-        $message = $form->generateMessage();
+        $message = $form->userSend();
+        if(!$message){abort(403);}
+
         return response()->success([
             'message' => new MessageResource($message),
+        ]);
+    }
+
+    public function sendMessages(StoreMessage $form)
+    {
+        $messages = $form->adminSend();
+        if(!$messages){abort(403);}
+
+        return response()->success([
+            'messages' => MessageResource::collection($messages->load('body')),
         ]);
     }
 
